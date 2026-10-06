@@ -1,0 +1,135 @@
+name: Build LZC libraries
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+
+  # ---------------------------------------------------------
+  # Windows x64
+  # ---------------------------------------------------------
+  build-windows:
+    name: Windows x64
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
+      - name: Show build environment
+        shell: bash
+        run: |
+          echo "OS: ${{ runner.os }}"
+          echo "Architecture: ${{ runner.arch }}"
+
+      - name: Build DLL
+        shell: bash
+        run: |
+          gcc -O2 -shared -o calculate_complexity_64.dll calculate_complexity.c
+
+      - name: Check generated library
+        shell: bash
+        run: |
+          ls -la calculate_complexity_64.dll
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: lzc-windows-x64
+          path: calculate_complexity_64.dll
+
+
+  # ---------------------------------------------------------
+  # Linux x64
+  # ---------------------------------------------------------
+  build-linux:
+    name: Linux x64
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
+      - name: Show build environment
+        run: |
+          echo "OS: ${{ runner.os }}"
+          echo "Architecture: ${{ runner.arch }}"
+
+      - name: Build shared library
+        run: |
+          gcc -O2 -fPIC -shared -o calculate_complexity_64.so calculate_complexity.c
+
+      - name: Check generated library
+        run: |
+          ls -la calculate_complexity_64.so
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: lzc-linux-x64
+          path: calculate_complexity_64.so
+
+
+  # ---------------------------------------------------------
+  # macOS Intel x86_64
+  # ---------------------------------------------------------
+  build-macos-intel:
+    name: macOS Intel x86_64
+    runs-on: macos-15-intel
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
+      - name: Show build environment
+        run: |
+          echo "OS: ${{ runner.os }}"
+          echo "Architecture: ${{ runner.arch }}"
+
+      - name: Build shared library
+        run: |
+          clang -O2 -dynamiclib -o calculate_complexity_x86_64.dylib calculate_complexity.c
+
+      - name: Check generated library
+        run: |
+          ls -la calculate_complexity_x86_64.dylib
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: lzc-macos-x86_64
+          path: calculate_complexity_x86_64.dylib
+
+
+  # ---------------------------------------------------------
+  # macOS Apple Silicon ARM64
+  # ---------------------------------------------------------
+  build-macos-arm64:
+    name: macOS ARM64
+    runs-on: macos-15
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
+      - name: Show build environment
+        run: |
+          echo "OS: ${{ runner.os }}"
+          echo "Architecture: ${{ runner.arch }}"
+
+      - name: Build shared library
+        run: |
+          clang -O2 -dynamiclib -o calculate_complexity_arm64.dylib calculate_complexity.c
+
+      - name: Check generated library
+        run: |
+          ls -la calculate_complexity_arm64.dylib
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: lzc-macos-arm64
+          path: calculate_complexity_arm64.dylib
