@@ -1,0 +1,164 @@
+name: Test LZC libraries
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - calculate_complexity.c
+      - tests/**
+      - .github/workflows/test.yml
+
+jobs:
+
+  # ---------------------------------------------------------
+  # Windows reference
+  # ---------------------------------------------------------
+  reference-windows:
+    name: Windows reference
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.10'
+
+      - name: Install NumPy
+        run: pip install numpy
+
+      - name: Build DLL
+        shell: bash
+        run: |
+          gcc -O2 -shared -o calculate_complexity_64.dll calculate_complexity.c
+
+      - name: Run Windows reference
+        shell: bash
+        run: |
+          python tests/test_complexity.py \
+            --library calculate_complexity_64.dll \
+            --save-reference reference_results.json
+
+      - name: Upload reference results
+        uses: actions/upload-artifact@v4
+        with:
+          name: lzc-reference-results
+          path: reference_results.json
+
+
+  # ---------------------------------------------------------
+  # Linux
+  # ---------------------------------------------------------
+  test-linux:
+    name: Test Linux x64
+    needs: reference-windows
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.10'
+
+      - name: Install NumPy
+        run: pip install numpy
+
+      - name: Build Linux library
+        run: |
+          gcc -O2 -fPIC -shared \
+            -o calculate_complexity_64.so \
+            calculate_complexity.c
+
+      - name: Download Windows reference
+        uses: actions/download-artifact@v5
+        with:
+          name: lzc-reference-results
+
+      - name: Compare with Windows
+        run: |
+          python tests/test_complexity.py \
+            --library calculate_complexity_64.so \
+            --compare reference_results.json
+
+
+  # ---------------------------------------------------------
+  # macOS Intel
+  # ---------------------------------------------------------
+  test-macos-intel:
+    name: Test macOS Intel
+    needs: reference-windows
+    runs-on: macos-15-intel
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.10'
+
+      - name: Install NumPy
+        run: pip install numpy
+
+      - name: Build macOS Intel library
+        run: |
+          clang -O2 -dynamiclib \
+            -o calculate_complexity_x86_64.dylib \
+            calculate_complexity.c
+
+      - name: Download Windows reference
+        uses: actions/download-artifact@v5
+        with:
+          name: lzc-reference-results
+
+      - name: Compare with Windows
+        run: |
+          python tests/test_complexity.py \
+            --library calculate_complexity_x86_64.dylib \
+            --compare reference_results.json
+
+
+  # ---------------------------------------------------------
+  # macOS ARM64
+  # ---------------------------------------------------------
+  test-macos-arm64:
+    name: Test macOS ARM64
+    needs: reference-windows
+    runs-on: macos-15
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.10'
+
+      - name: Install NumPy
+        run: pip install numpy
+
+      - name: Build macOS ARM64 library
+        run: |
+          clang -O2 -dynamiclib \
+            -o calculate_complexity_arm64.dylib \
+            calculate_complexity.c
+
+      - name: Download Windows reference
+        uses: actions/download-artifact@v5
+        with:
+          name: lzc-reference-results
+
+      - name: Compare with Windows
+        run: |
+          python tests/test_complexity.py \
+            --library calculate_complexity_arm64.dylib \
+            --compare reference_results.json

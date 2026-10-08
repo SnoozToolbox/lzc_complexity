@@ -4,6 +4,10 @@ on:
   push:
     branches:
       - main
+    paths:
+      - calculate_complexity.c
+      - .github/workflows/build.yml
+
   workflow_dispatch:
 
 jobs:
